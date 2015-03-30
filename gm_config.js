@@ -1,4 +1,6 @@
 /*
+version: 1.05
+
 Copyright 2009+, GM_config Contributors (https://github.com/sizzlemctwizzle/GM_config)
 
 GM_config Contributors:
@@ -6,6 +8,7 @@ GM_config Contributors:
     Joe Simmons
     Izzy Soft
     Marti Martz
+	Piyush Soni
 
 GM_config is distributed under the terms of the GNU Lesser General Public License.
 
@@ -52,6 +55,7 @@ function GM_configInit(config, args) {
         "#GM_config .indent40 { margin-left: 40%; }",
         "#GM_config .field_label { font-size: 12px; font-weight: bold; margin-right: 6px; }",
         "#GM_config .radio_label { font-size: 12px; }",
+        "#GM_config .check_label { font-size: 12px; }",
         "#GM_config .block { display: block; }",
         "#GM_config .saveclose_buttons { margin: 16px 10px 10px; padding: 2px 12px; }",
         "#GM_config .reset, #GM_config .reset a," +
@@ -321,10 +325,10 @@ GM_configStruct.prototype = {
 
   close: function() {
     // If frame is an iframe then remove it
-    if (this.frame.contentDocument) {
+    if (this.frame && this.frame.contentDocument) {
       this.remove(this.frame);
       this.frame = null;
-    } else { // else wipe its content
+    } else if(this.frame) { // else wipe its content
       this.frame.innerHTML = "";
       this.frame.style.display = "none";
     }
@@ -574,7 +578,17 @@ GM_configField.prototype = {
 
     // Retrieve the first prop
     for (var i in field) { firstProp = i; break; }
-
+	
+	var labelIndex = 0;
+	var valueIndex = 0;
+	var count = 0;
+	for (var i in field) {
+	if (i == 'label') { labelIndex = count; }
+	else if (i == 'default') { valueIndex = count; }
+	count++;
+	}
+	
+	
     var label = field.label && type != "button" ?
       create('label', {
         id: configId + '_' + id + '_field_label',
@@ -619,6 +633,41 @@ GM_configField.prototype = {
 
         retNode.appendChild(wrap);
         break;
+		
+      case 'checkbox':
+		var checkValue;
+		if(!options)
+		{
+			checkValue = value;
+			options = new Array();
+			value = checkValue ? field.label : "";
+			// alert(value);
+			options.push(field.label);
+		}
+        var wrap = create('div', {
+          id: configId + '_field_' + id
+        });
+        this.node = wrap;
+		//alert(options.length);
+        for (var i = 0, len = options.length; i < len; ++i) {
+			console.log('check:' + options[i]);
+          var checkLabel = create('label', {className: 'check_label'}, options[i]);
+
+          var check = wrap.appendChild(create('input', {
+            value: options[i],
+            type: 'checkbox',
+            name: id,
+            checked: options[i] == value
+          }));
+
+			var checkLabelPos = labelIndex < valueIndex ? 'left' : 'right';
+			addLabel(checkLabelPos, checkLabel, wrap, check);
+        }
+
+        retNode.appendChild(wrap);
+        break;		
+		
+		
       case 'select':
         var wrap = create('select', {
           id: configId + '_field_' + id
@@ -643,9 +692,9 @@ GM_configField.prototype = {
         };
 
         switch (type) {
-          case 'checkbox':
-            props.checked = value;
-            break;
+          // case 'checkbox':
+            // props.checked = value;
+            // break;
           case 'button':
             props.size = field.size ? field.size : 25;
             if (field.script) field.click = field.script;
